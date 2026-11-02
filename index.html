@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Sleep &amp; Reaction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one narrow column for participants (a lab form), a wider column for the analysis view; the test runs as a full-screen field. */
+:root {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --ink: #141a24;
+  --muted: #5a6373;
+  --line: #d8dce4;
+  --soft: #eceff5;
+  --accent: #2745c4;
+  --accent-ink: #ffffff;
+  --good: #1d7149;
+  --warn: #9a4a07;
+  --bad: #b42318;
+  --wait: #1c2330;
+  --wait-ink: #c4ccd9;
+  --stim: #ffd60a;
+  --stim-ink: #1a1500;
+  --dot: #2745c4;
+  --fit: #b42318;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1218; --surface: #161b24; --ink: #e5e8ee; --muted: #97a1b2; --line: #2a3140; --soft: #1d2330;
+    --accent: #8098ff; --accent-ink: #0a0f1f; --good: #5cc98f; --warn: #f0a457; --bad: #ff7b6e;
+    --wait: #10141b; --wait-ink: #aab3c2; --stim: #ffd60a; --stim-ink: #1a1500; --dot: #8098ff; --fit: #ff7b6e;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(28px + env(safe-area-inset-top, 0px)) calc(48px + env(safe-area-inset-bottom, 0px));
+}
+[hidden] { display: none !important; }
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.wrap.wide { max-width: 1040px; }
+header.top { display: flex; flex-direction: column; gap: 4px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: 30px; line-height: 1.15; margin: 0; font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
+h2 { font-size: 21px; line-height: 1.25; margin: 0; font-weight: 600; text-wrap: balance; }
+h3 { font-size: 16px; margin: 0; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.steps { display: flex; gap: 6px; }
+.steps span { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.steps span.on { background: var(--accent); }
+.steplabel { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+ul.facts { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+label { font-weight: 500; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 460px) { .row2 { grid-template-columns: 1fr; } }
+input[type="time"], input[type="number"], textarea {
+  font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%;
+}
+input[type="time"], input[type="number"] { font-family: var(--font-mono); font-size: 17px; }
+textarea { font-family: var(--font-mono); font-size: 13px; min-height: 130px; resize: vertical; }
+input:focus-visible, textarea:focus-visible, button:focus-visible, .choice input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: 13px; color: var(--muted); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; }
+.check input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+legend { font-weight: 500; padding: 0; margin-bottom: 8px; }
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.choice { position: relative; }
+.choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.choice span { display: inline-block; padding: 8px 18px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); cursor: pointer; }
+.choice input:checked + span { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.calc { font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
+.calc b { color: var(--ink); font-weight: 600; }
+.error { color: var(--bad); font-size: 14px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+button { font: inherit; cursor: pointer; border-radius: 8px; padding: 11px 20px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 500; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.demo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.demo div { border-radius: 8px; padding: 18px 12px; text-align: center; font-weight: 600; font-size: 14px; }
+.demo .w { background: var(--wait); color: var(--wait-ink); }
+.demo .g { background: var(--stim); color: var(--stim-ink); font-size: 18px; letter-spacing: .04em; }
+.big { font-family: var(--font-mono); font-size: 44px; font-weight: 600; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.code { font-family: var(--font-mono); font-size: 13px; background: var(--soft); border: 1px dashed var(--line); border-radius: 8px; padding: 12px; word-break: break-all; user-select: all; }
+.status { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 8px; background: var(--soft); font-weight: 500; }
+.status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+.status.ok .dot { background: var(--good); }
+.status.fail .dot { background: var(--bad); }
+.status.busy .dot { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+footer.foot { font-size: 13px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+
+/* Test field */
+#arena {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  background: var(--wait); color: var(--wait-ink); text-align: center;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer;
+}
+#arena.go { background: var(--stim); color: var(--stim-ink); }
+#arena.early { background: #5a1a14; color: #ffd9d4; }
+#arena .msg { font-size: 26px; font-weight: 600; max-width: 22ch; text-wrap: balance; }
+#arena.go .msg { font-size: 56px; letter-spacing: .05em; }
+#arena .sub { font-size: 15px; opacity: .8; max-width: 36ch; }
+#arena .fb { font-family: var(--font-mono); font-size: 48px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#arena .progress { position: absolute; left: max(20px, env(safe-area-inset-left, 0px)); top: calc(16px + env(safe-area-inset-top, 0px)); font-family: var(--font-mono); font-size: 13px; opacity: .75; }
+#arena .abort { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); background: transparent; color: inherit; border-color: currentColor; opacity: .7; padding: 6px 12px; font-size: 13px; }
+
+/* Analysis */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--soft); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.stat .k { font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.stat .v { font-family: var(--font-mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.verdict { border-left: 3px solid var(--muted); padding: 4px 0 4px 12px; }
+.verdict.sig { border-color: var(--good); }
+.verdict.ns { border-color: var(--warn); }
+.badge { display: inline-block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--soft); color: var(--warn); border: 1px solid var(--line); }
+.chartbox { width: 100%; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+svg .ax { stroke: var(--line); }
+svg .grid { stroke: var(--soft); }
+svg .tick { fill: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+svg .alab { fill: var(--muted); font-family: var(--font-body); font-size: 13px; }
+svg .pt { fill: var(--dot); fill-opacity: .75; stroke: var(--surface); stroke-width: 1.5; }
+svg .fit { stroke: var(--fit); stroke-width: 2; stroke-dasharray: 6 4; fill: none; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+th { font-weight: 600; background: var(--soft); position: sticky; top: 0; }
+th:first-child, td:first-child { text-align: left; font-family: var(--font-mono); }
+tr.out td { color: var(--muted); text-decoration: line-through; }
+tr:last-child td { border-bottom: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.note { font-size: 14px; color: var(--muted); }
+code { font-family: var(--font-mono); font-size: .92em; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="main">
+  <header class="top">
+    <span class="eyebrow">IB Biology · Internal Assessment</span>
+    <h1>Sleep &amp; Reaction</h1>
+  </header>
+
+  <!-- 1 Consent -->
+  <section id="s-intro" class="card">
+    <div class="steps" aria-hidden="true"><span class="on"></span><span></span><span></span><span></span></div>
+    <span class="steplabel">Step 1 of 4 · Information &amp; consent</span>
+    <h2>Does last night's sleep affect your reaction time?</h2>
+    <p>For my biology investigation I am measuring whether the amount of sleep you got last night is related to how fast you react. You answer four short questions and then do a reaction test. It takes about 3 minutes.</p>
+    <ul class="facts">
+      <li>You can take part if you are between 16 and 25 years old.</li>
+      <li>Taking part is voluntary and anonymous. I do not ask for your name or any contact details.</li>
+      <li>You can stop at any time. Nothing is saved until the very last step.</li>
+      <li>At the end you get a participant ID. Send it to me if you want your data deleted later.</li>
+      <li>The data is only used for this school project.</li>
+    </ul>
+    <label class="check"><input type="checkbox" id="c-consent"> <span>I have read this information and I agree to take part.</span></label>
+    <div class="actions"><button class="primary" id="b-intro" disabled>Continue</button></div>
+  </section>
+
+  <!-- 2 Questionnaire -->
+  <section id="s-form" class="card" hidden>
+    <div class="steps" aria-hidden="true"><span class="on"></span><span class="on"></span><span></span><span></span></div>
+    <span class="steplabel">Step 2 of 4 · Questionnaire</span>
+    <h2>Your last night</h2>
+    <div class="row2">
+      <div class="field"><label for="f-bed">When did you fall asleep?</label><input type="time" id="f-bed" value="23:30"></div>
+      <div class="field"><label for="f-wake">When did you wake up?</label><input type="time" id="f-wake" value="07:00"></div>
+    </div>
+    <p class="calc" id="f-calc">Sleep duration: <b>7 h 30 min</b></p>
+    <p class="hint">Use the time you actually fell asleep, not the time you went to bed. Estimate as accurately as you can.</p>
+    <div class="field">
+      <label for="f-age">How old are you?</label>
+      <input type="number" id="f-age" min="10" max="99" inputmode="numeric" placeholder="e.g. 17" style="max-width:160px">
+    </div>
+    <label class="check" id="parent-wrap" hidden><input type="checkbox" id="f-parent"> <span>I am under 18 and my parent or guardian agrees to my taking part.</span></label>
+    <fieldset>
+      <legend>Have you had any caffeine in the last 3 hours? <span class="hint">(coffee, energy drink, cola, black tea)</span></legend>
+      <div class="choices">
+        <label class="choice"><input type="radio" name="caf" value="1"><span>Yes</span></label>
+        <label class="choice"><input type="radio" name="caf" value="0"><span>No</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Did you take a nap today?</legend>
+      <div class="choices">
+        <label class="choice"><input type="radio" name="nap" value="1"><span>Yes</span></label>
+        <label class="choice"><input type="radio" name="nap" value="0"><span>No</span></label>
+      </div>
+    </fieldset>
+    <p class="error" id="f-err" hidden></p>
+    <div class="actions"><button class="primary" id="b-form">Continue</button></div>
+  </section>
+
+  <!-- 3 Instructions -->
+  <section id="s-explain" class="card" hidden>
+    <div class="steps" aria-hidden="true"><span class="on"></span><span class="on"></span><span class="on"></span><span></span></div>
+    <span class="steplabel">Step 3 of 4 · How the test works</span>
+    <h2>React as soon as the screen turns yellow</h2>
+    <div class="demo" aria-hidden="true"><div class="w">Wait …</div><div class="g">NOW!</div></div>
+    <ul class="facts">
+      <li>The screen is dark grey. After a random delay it turns yellow.</li>
+      <li>As soon as it turns yellow, click or tap anywhere on it as fast as you can.</li>
+      <li>If you press too early, that counts as a false start and the trial is repeated.</li>
+      <li>You start with 3 practice trials that do not count, followed by 10 recorded trials.</li>
+    </ul>
+    <p class="muted small">Please sit still, turn off music and notifications, and use the same hand and the same device for the whole test.</p>
+    <div class="actions"><button class="primary" id="b-start">Start practice</button></div>
+  </section>
+
+  <!-- Break -->
+  <section id="s-break" class="card" hidden>
+    <span class="steplabel">Practice finished</span>
+    <h2>Now for the 10 recorded trials</h2>
+    <p>Same as before: as soon as the screen turns yellow, click or tap as fast as you can.</p>
+    <div class="actions"><button class="primary" id="b-main">Start the test</button></div>
+  </section>
+
+  <!-- 4 End -->
+  <section id="s-end" class="card" hidden>
+    <div class="steps" aria-hidden="true"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></div>
+    <span class="steplabel">Step 4 of 4 · Done</span>
+    <h2>Thank you for taking part!</h2>
+    <div><p class="muted small">Your reaction time (median of 10 trials)</p><p class="big" id="e-median">–</p></div>
+    <p class="muted small" id="e-meta"></p>
+    <div class="status busy" id="e-status"><span class="dot"></span><span id="e-statustext">Saving your results …</span></div>
+    <div id="e-fallback" hidden>
+      <div class="card" style="padding:16px;gap:12px">
+        <p>Your results could not be sent automatically. Please check your internet connection and try again. If it still does not work, copy the result code and send it to the person who shared this link with you.</p>
+        <div class="code" id="e-code"></div>
+        <div class="actions">
+          <button class="primary" id="b-retry">Try again</button>
+          <button id="b-copy">Copy code</button>
+          <span class="muted small" id="e-copied" aria-live="polite"></span>
+        </div>
+      </div>
+    </div>
+    <p class="hint">Your participant ID is <b id="e-id"></b>. If you want your data deleted, just send this ID.</p>
+  </section>
+
+  <!-- Not eligible -->
+  <section id="s-out" class="card" hidden>
+    <h2>Thank you for your interest</h2>
+    <p>This study is for people aged 16 to 25, so I cannot include your results. Nothing has been saved.</p>
+    <div class="actions"><button id="b-restart">Back to start</button></div>
+  </section>
+
+  <footer class="foot">
+    <span>IB Biology IA · Sleep duration and simple visual reaction time</span>
+  </footer>
+</div>
+
+<!-- Analysis (open with #analysis) -->
+<div class="wrap wide" id="analysis" hidden>
+  <header class="top">
+    <span class="eyebrow">IB Biology IA · Analysis</span>
+    <h1>Sleep &amp; Reaction: Results</h1>
+  </header>
+
+  <section class="card">
+    <h2>Paste your data</h2>
+    <p class="note">In your Google Sheet, click the top-left corner to select everything (or press Ctrl+A), copy it and paste it here, header row included. Backup result codes starting with <code>RT1|</code> are recognised too, and duplicate IDs are only counted once. Nothing leaves your browser.</p>
+    <textarea id="a-input" placeholder="timestamp	participant_id	date	local_time	sleep_hours	age	…"></textarea>
+    <div class="actions">
+      <button class="primary" id="b-analyse">Analyse</button>
+      <button id="b-demo">Load example data</button>
+      <button id="b-clear">Clear</button>
+      <span class="badge" id="a-demobadge" hidden>Made-up example data</span>
+    </div>
+    <p class="error" id="a-err" hidden></p>
+  </section>
+
+  <section class="card">
+    <h2>Exclusion criteria</h2>
+    <div class="filters">
+      <label class="check"><input type="checkbox" id="x-caf" checked> <span>Exclude caffeine in the last 3 h</span></label>
+      <label class="check"><input type="checkbox" id="x-nap" checked> <span>Exclude nap today</span></label>
+      <label class="check"><input type="checkbox" id="x-age" checked> <span>Ages 16–25 only</span></label>
+      <label class="check"><input type="checkbox" id="x-valid" checked> <span>At least 8 valid trials</span></label>
+    </div>
+    <p class="note">A trial is valid if it lies between 100 and 1000 ms. Values below 100 ms are anticipations, values above 1000 ms suggest distraction. Each participant is represented by the median of their valid trials.</p>
+  </section>
+
+  <section class="card">
+    <h2>Correlation</h2>
+    <div class="stats">
+      <div class="stat"><span class="k">n (included)</span><span class="v" id="r-n">–</span></div>
+      <div class="stat"><span class="k">Spearman rₛ</span><span class="v" id="r-rs">–</span></div>
+      <div class="stat"><span class="k">p-value</span><span class="v" id="r-p">–</span></div>
+      <div class="stat"><span class="k">Pearson r</span><span class="v" id="r-r">–</span></div>
+    </div>
+    <p class="verdict" id="r-verdict">Paste your data or load the example data to see the analysis.</p>
+    <div class="chartbox" id="r-chart"></div>
+    <p class="note">Each point is one participant. Dashed line: linear trend line (least squares). Two-tailed test at a significance level of α = 0.05. The p-value for rₛ uses the t-distribution approximation and is reliable from about n = 10.</p>
+  </section>
+
+  <section class="card">
+    <div class="actions" style="justify-content:space-between">
+      <h2>Raw data</h2>
+      <div class="actions">
+        <button id="b-csvcopy">Copy CSV</button>
+        <button id="b-csvsave">Download CSV</button>
+        <span class="muted small" id="a-csvmsg" aria-live="polite"></span>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="a-table"><thead></thead><tbody></tbody></table></div>
+    <p class="note">Struck-through rows meet an exclusion criterion and are left out of the statistics. The CSV contains every row.</p>
+  </section>
+
+  <footer class="foot"><button class="link" id="b-toparticipant">Back to participant view</button></footer>
+</div>
+
+<!-- Test field -->
+<div id="arena" hidden role="button" aria-live="assertive">
+  <span class="progress" id="ar-prog"></span>
+  <button class="abort" id="ar-abort" type="button">Quit</button>
+  <div class="fb" id="ar-fb" hidden></div>
+  <div class="msg" id="ar-msg"></div>
+  <div class="sub" id="ar-sub"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  // Paste the web app URL of your Google Apps Script between the quotes.
+  var SHEET_URL = "https://script.google.com/macros/s/AKfycbx-rWTm4pYjRzN_qw57HgAIX6e7k5XtF7ZXg8ECSUVKONRRXlG8sJOLsvInFW9DUkDj/exec";
+  var PRACTICE = 3, MAIN = 10, MIN_FP = 1500, MAX_FP = 4000;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var show = function (id) {
+    ["s-intro", "s-form", "s-explain", "s-break", "s-end", "s-out"].forEach(function (s) { $(s).hidden = s !== id; });
+    window.scrollTo(0, 0);
+  };
+
+  /* ---------- Helpers ---------- */
+  function toMin(t) { if (!t) return null; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
+  function sleepMinutes() {
+    var b = toMin($("f-bed").value), w = toMin($("f-wake").value);
+    if (b === null || w === null) return null;
+    var d = w - b; if (d <= 0) d += 1440; return d;
+  }
+  function fmtHM(m) { return Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min"; }
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function median(a) { if (!a.length) return NaN; var s = a.slice().sort(function (x, y) { return x - y; }); var m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+  function mean(a) { return a.reduce(function (s, x) { return s + x; }, 0) / a.length; }
+  function sd(a) { if (a.length < 2) return NaN; var m = mean(a); return Math.sqrt(a.reduce(function (s, x) { return s + (x - m) * (x - m); }, 0) / (a.length - 1)); }
+  function randId() { var c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", s = ""; for (var i = 0; i < 6; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
+
+  /* ---------- Step 1 ---------- */
+  $("c-consent").addEventListener("change", function () { $("b-intro").disabled = !this.checked; });
+  $("b-intro").addEventListener("click", function () { show("s-form"); });
+
+  /* ---------- Step 2 ---------- */
+  function updateCalc() {
+    var m = sleepMinutes();
+    $("f-calc").innerHTML = m === null ? "Sleep duration: –" : "Sleep duration: <b>" + fmtHM(m) + "</b>";
+  }
+  $("f-bed").addEventListener("input", updateCalc);
+  $("f-wake").addEventListener("input", updateCalc);
+  $("f-age").addEventListener("input", function () {
+    var a = parseInt(this.value, 10);
+    $("parent-wrap").hidden = !(a >= 16 && a < 18);
+  });
+
+  var P = {};
+  $("b-form").addEventListener("click", function () {
+    var err = $("f-err"); err.hidden = true;
+    var m = sleepMinutes(), age = parseInt($("f-age").value, 10);
+    var caf = document.querySelector('input[name="caf"]:checked'), nap = document.querySelector('input[name="nap"]:checked');
+    var msg = "";
+    if (m === null) msg = "Please enter when you fell asleep and when you woke up.";
+    else if (m < 120 || m > 960) msg = "That gives a sleep duration of " + fmtHM(m) + ". Please check both times.";
+    else if (isNaN(age)) msg = "Please enter your age.";
+    else if (!caf || !nap) msg = "Please answer both yes/no questions.";
+    else if (age >= 16 && age < 18 && !$("f-parent").checked) msg = "If you are under 18, you need your parent's or guardian's agreement. Please confirm this above.";
+    if (msg) { err.textContent = msg; err.hidden = false; return; }
+    if (age < 16 || age > 25) { show("s-out"); return; }
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var awake = nowMin - toMin($("f-wake").value); if (awake < 0) awake += 1440;
+    P = {
+      id: randId(), sleep: m, age: age, caf: +caf.value, nap: +nap.value,
+      date: now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()),
+      time: pad(now.getHours()) + ":" + pad(now.getMinutes()), awake: awake
+    };
+    show("s-explain");
+  });
+
+  $("b-restart").addEventListener("click", resetAll);
+  function resetAll() {
+    $("c-consent").checked = false; $("b-intro").disabled = true;
+    $("f-age").value = ""; $("f-parent").checked = false; $("parent-wrap").hidden = true;
+    document.querySelectorAll('input[name="caf"], input[name="nap"]').forEach(function (r) { r.checked = false; });
+    $("f-err").hidden = true; P = {};
+    show("s-intro");
+  }
+
+  /* ---------- Reaction test ---------- */
+  var arena = $("arena"), T = null;
+  function setArena(cls, msg, sub, fb) {
+    arena.className = cls || "";
+    $("ar-msg").textContent = msg || "";
+    $("ar-sub").textContent = sub || "";
+    if (fb) { $("ar-fb").textContent = fb; $("ar-fb").hidden = false; } else { $("ar-fb").hidden = true; }
+  }
+  function progressText() {
+    return T.phase === "practice" ? "Practice " + (T.done + 1) + " / " + PRACTICE : "Trial " + (T.done + 1) + " / " + MAIN;
+  }
+  function measureHz(cb) {
+    var ts = [], n = 0;
+    function f(t) { ts.push(t); if (++n < 45) requestAnimationFrame(f); else {
+      var d = []; for (var i = 6; i < ts.length; i++) d.push(ts[i] - ts[i - 1]);
+      var hz = 1000 / median(d); cb(isFinite(hz) ? Math.round(hz) : 0);
+    } }
+    requestAnimationFrame(f);
+  }
+  function startPhase(phase) {
+    T = { phase: phase, done: 0, total: phase === "practice" ? PRACTICE : MAIN, rts: [], state: "ready", timer: null, onset: 0, ptypes: [], falseStarts: 0 };
+    document.body.style.overflow = "hidden";
+    arena.hidden = false;
+    $("ar-prog").textContent = progressText();
+    setArena("", "Tap the screen to begin", phase === "practice" ? "Practice round: this does not count yet." : "This one counts: 10 trials.");
+    if (phase === "main" && !P.hz) measureHz(function (hz) { P.hz = hz; });
+  }
+  function nextTrial() {
+    $("ar-prog").textContent = progressText();
+    T.state = "wait"; T.onset = 0; T.responded = false;
+    setArena("", "Wait …", "The screen will turn yellow soon.");
+    var fp = MIN_FP + Math.random() * (MAX_FP - MIN_FP);
+    T.timer = setTimeout(function () {
+      requestAnimationFrame(function () {
+        if (!T || T.state !== "wait") return;
+        T.state = "go"; T.onset = performance.now();
+        setArena("go", "NOW!", "");
+        // The next frame is roughly when the yellow became visible
+        requestAnimationFrame(function (t2) { if (T && T.state === "go" && !T.responded) T.onset = t2; });
+      });
+    }, fp);
+  }
+  arena.addEventListener("pointerdown", function (e) {
+    if (e.target.closest("#ar-abort") || !T) return;
+    e.preventDefault();
+    if (T.state === "ready") { nextTrial(); return; }
+    if (T.state === "wait") {
+      clearTimeout(T.timer); T.state = "pause";
+      if (T.phase === "main") T.falseStarts++;
+      setArena("early", "Too early!", "Wait until the screen turns yellow. This trial will be repeated.");
+      T.timer = setTimeout(nextTrial, 1600);
+      return;
+    }
+    if (T.state === "go") {
+      T.responded = true;
+      var rt = Math.round(e.timeStamp - T.onset);
+      if (rt < 0 || rt > 60000) rt = Math.round(performance.now() - T.onset);
+      T.state = "pause";
+      T.rts.push(rt); T.ptypes.push(e.pointerType || "mouse"); T.done++;
+      setArena("", "", "", rt + " ms");
+      T.timer = setTimeout(function () {
+        if (T.done < T.total) nextTrial(); else finishPhase();
+      }, 1100);
+    }
+  });
+  $("ar-abort").addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+  $("ar-abort").addEventListener("click", function () {
+    if (T) clearTimeout(T.timer);
+    T = null; closeArena();
+    resetAll();
+  });
+  function closeArena() { arena.hidden = true; document.body.style.overflow = ""; }
+
+  function buildRecord() {
+    var valid = P.rts.filter(function (x) { return x >= 100 && x <= 1000; });
+    return {
+      v: 1, id: P.id, date: P.date, time: P.time, sleep_min: P.sleep, age: P.age, caffeine: P.caf, nap: P.nap,
+      awake_min: P.awake, device: P.dev, hz: P.hz || 0, false_starts: P.fs, rts: P.rts,
+      valid: valid.length, median: median(valid)
+    };
+  }
+  function finishPhase() {
+    closeArena();
+    if (T.phase === "practice") { show("s-break"); return; }
+    var counts = {}; T.ptypes.forEach(function (p) { counts[p] = (counts[p] || 0) + 1; });
+    var dev = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; })[0] || "mouse";
+    P.dev = dev === "touch" ? "touch" : dev === "pen" ? "pen" : "mouse";
+    P.fs = T.falseStarts; P.rts = T.rts.slice();
+    T = null;
+    var rec = buildRecord();
+    $("e-median").textContent = (isFinite(rec.median) ? Math.round(rec.median) : Math.round(median(P.rts))) + " ms";
+    $("e-meta").textContent = "Sleep " + fmtHM(P.sleep) + " · " + rec.valid + " of 10 trials valid · screen approx. " + (P.hz || "?") + " Hz";
+    $("e-id").textContent = P.id;
+    $("e-code").textContent = ["RT1", P.id, P.date, P.time, P.sleep, P.age, P.caf, P.nap, P.awake, P.dev, P.hz || 0, P.fs, P.rts.join(",")].join("|");
+    show("s-end");
+    send(rec);
+  }
+
+  function setStatus(kind, text) {
+    $("e-status").className = "status " + kind; $("e-statustext").textContent = text;
+    $("e-fallback").hidden = kind !== "fail";
+  }
+  function send(rec) {
+    if (!SHEET_URL) { setStatus("fail", "Saving is not set up on this page yet."); return; }
+    setStatus("busy", "Saving your results …");
+    $("b-retry").disabled = true;
+    // text/plain avoids a CORS preflight, which Google Apps Script does not answer
+    fetch(SHEET_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(rec) })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res && res.ok) setStatus("ok", "Your results have been saved. You can close this page now.");
+        else setStatus("fail", "The results were not accepted" + (res && res.error ? " (" + res.error + ")." : "."));
+      })
+      .catch(function () { setStatus("fail", "Your results could not be sent."); })
+      .then(function () { $("b-retry").disabled = false; });
+  }
+  $("b-retry").addEventListener("click", function () { send(buildRecord()); });
+
+  $("b-start").addEventListener("click", function () { startPhase("practice"); });
+  $("b-main").addEventListener("click", function () { startPhase("main"); });
+
+  function copyText(text, msgEl, okMsg, fallbackEl) {
+    var done = function () { msgEl.textContent = okMsg; };
+    var fail = function () {
+      msgEl.textContent = "Copying did not work automatically. Select the text and copy it by hand.";
+      if (fallbackEl) { var r = document.createRange(); r.selectNodeContents(fallbackEl); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+    };
+    try { navigator.clipboard.writeText(text).then(done, fail); } catch (e) { fail(); }
+  }
+  $("b-copy").addEventListener("click", function () { copyText($("e-code").textContent, $("e-copied"), "Copied.", $("e-code")); });
+
+  /* ---------- Statistics ---------- */
+  function ranks(a) {
+    var idx = a.map(function (v, i) { return [v, i]; }).sort(function (x, y) { return x[0] - y[0]; });
+    var r = new Array(a.length), i = 0;
+    while (i < idx.length) { var j = i; while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++;
+      var avg = (i + j) / 2 + 1; for (var k = i; k <= j; k++) r[idx[k][1]] = avg; i = j + 1; }
+    return r;
+  }
+  function pearson(x, y) {
+    var mx = mean(x), my = mean(y), sxy = 0, sxx = 0, syy = 0;
+    for (var i = 0; i < x.length; i++) { var dx = x[i] - mx, dy = y[i] - my; sxy += dx * dy; sxx += dx * dx; syy += dy * dy; }
+    return sxx && syy ? sxy / Math.sqrt(sxx * syy) : NaN;
+  }
+  function lgamma(x) {
+    var c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    var y = x, t = x + 5.5; t -= (x + 0.5) * Math.log(t); var s = 1.000000000190015;
+    for (var j = 0; j < 6; j++) s += c[j] / ++y; return -t + Math.log(2.5066282746310005 * s / x);
+  }
+  function betacf(a, b, x) {
+    var qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap; if (Math.abs(d) < 1e-30) d = 1e-30; d = 1 / d; var h = d;
+    for (var m = 1; m <= 200; m++) { var m2 = 2 * m, aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < 1e-30) d = 1e-30; c = 1 + aa / c; if (Math.abs(c) < 1e-30) c = 1e-30; d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < 1e-30) d = 1e-30; c = 1 + aa / c; if (Math.abs(c) < 1e-30) c = 1e-30; d = 1 / d;
+      var del = d * c; h *= del; if (Math.abs(del - 1) < 1e-12) break; }
+    return h;
+  }
+  function ibeta(x, a, b) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    var bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+  }
+  function pFromR(r, n) {
+    var df = n - 2; if (df < 1 || !isFinite(r)) return NaN; if (Math.abs(r) >= 1) return 0;
+    var t = r * Math.sqrt(df / (1 - r * r)); return ibeta(df / (df + t * t), df / 2, 0.5);
+  }
+
+  /* ---------- Analysis: parsing ---------- */
+  function finish(o) {
+    var valid = o.rts.filter(function (x) { return x >= 100 && x <= 1000; });
+    o.valid = valid.length; o.med = median(valid); o.mean = valid.length ? mean(valid) : NaN; o.sd = sd(valid);
+    return o;
+  }
+  function toNum(s) { if (s == null) return NaN; s = String(s).trim().replace(",", "."); return s === "" ? NaN : Number(s); }
+  function yes(s) { s = String(s || "").trim().toLowerCase(); return s === "yes" || s === "1" || s === "true" || s === "ja" ? 1 : 0; }
+  function parseCodes(text) {
+    var found = text.match(/R[TZ]1\|[A-Z0-9]{6}\|[0-9-]{10}\|[0-9:]{5}\|[^\s";]+/g) || [];
+    var out = [], bad = 0;
+    found.forEach(function (c) {
+      var f = c.split("|"); if (f.length !== 13) { bad++; return; }
+      var rts = f[12].split(",").map(Number).filter(function (x) { return isFinite(x) && x > 0; });
+      var dv = f[9] === "t" ? "touch" : f[9] === "p" ? "pen" : f[9] === "m" ? "mouse" : f[9];
+      var o = { id: f[1], date: f[2], time: f[3], sleep: +f[4], age: +f[5], caf: +f[6], nap: +f[7], awake: +f[8], dev: dv, hz: +f[10], fs: +f[11], rts: rts };
+      if (!isFinite(o.sleep) || !isFinite(o.age) || !rts.length) { bad++; return; }
+      out.push(finish(o));
+    });
+    return { rows: out, bad: bad };
+  }
+  function parseTable(text) {
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim(); });
+    var hi = -1; for (var i = 0; i < lines.length; i++) if (/participant_id/.test(lines[i])) { hi = i; break; }
+    if (hi < 0) return { rows: [], bad: 0 };
+    var delim = lines[hi].indexOf("\t") >= 0 ? "\t" : lines[hi].indexOf(";") >= 0 ? ";" : ",";
+    var head = lines[hi].split(delim).map(function (h) { return h.trim().replace(/^"|"$/g, ""); });
+    var col = function (n) { return head.indexOf(n); };
+    var out = [], bad = 0;
+    for (var r = hi + 1; r < lines.length; r++) {
+      var c = lines[r].split(delim).map(function (v) { return v.trim().replace(/^"|"$/g, ""); });
+      var g = function (n) { var k = col(n); return k >= 0 ? c[k] : ""; };
+      if (!g("participant_id")) continue;
+      var rts = []; for (var t = 1; t <= 10; t++) { var v = toNum(g("rt" + t + "_ms")); if (isFinite(v) && v > 0) rts.push(v); }
+      var o = { id: g("participant_id"), date: g("date"), time: g("local_time"), sleep: Math.round(toNum(g("sleep_hours")) * 60),
+        age: toNum(g("age")), caf: yes(g("caffeine_3h")), nap: yes(g("nap_today")), awake: Math.round(toNum(g("hours_awake")) * 60),
+        dev: g("input_device"), hz: toNum(g("refresh_hz")), fs: toNum(g("false_starts")) || 0, rts: rts };
+      if (!isFinite(o.sleep) || !isFinite(o.age) || !rts.length) { bad++; continue; }
+      out.push(finish(o));
+    }
+    return { rows: out, bad: bad };
+  }
+  function parseAll(text) {
+    var a = parseTable(text), b = parseCodes(text), seen = {}, rows = [];
+    a.rows.concat(b.rows).forEach(function (o) { if (!seen[o.id]) { seen[o.id] = 1; rows.push(o); } });
+    return { rows: rows, bad: a.bad + b.bad };
+  }
+  window.__test = { parseAll: parseAll, pFromR: pFromR, ranks: ranks, pearson: pearson };
+
+  /* ---------- Analysis: output ---------- */
+  var ROWS = [];
+  function excluded(o) {
+    var why = [];
+    if ($("x-caf").checked && o.caf) why.push("caffeine");
+    if ($("x-nap").checked && o.nap) why.push("nap");
+    if ($("x-age").checked && (o.age < 16 || o.age > 25)) why.push("age");
+    if ($("x-valid").checked && o.valid < 8) why.push("< 8 valid");
+    if (!isFinite(o.med)) why.push("no valid trials");
+    return why;
+  }
+  function num(x, d) { return isFinite(x) ? x.toFixed(d) : "–"; }
+
+  function runAnalysis() {
+    var inc = ROWS.filter(function (o) { return !excluded(o).length; });
+    var x = inc.map(function (o) { return o.sleep / 60; }), y = inc.map(function (o) { return o.med; });
+    var n = inc.length;
+    var rs = n >= 3 ? pearson(ranks(x), ranks(y)) : NaN, r = n >= 3 ? pearson(x, y) : NaN, p = n >= 3 ? pFromR(rs, n) : NaN;
+    $("r-n").textContent = n;
+    $("r-rs").textContent = num(rs, 3);
+    $("r-p").textContent = isFinite(p) ? (p < 0.001 ? "< 0.001" : num(p, 3)) : "–";
+    $("r-r").textContent = num(r, 3);
+    var v = $("r-verdict");
+    if (!ROWS.length) { v.className = "verdict"; v.textContent = "Paste your data or load the example data to see the analysis."; }
+    else if (n < 3) { v.className = "verdict ns"; v.textContent = "Too few included participants for a correlation (at least 3, ideally about 30)."; }
+    else {
+      var a = Math.abs(rs), strength = a < 0.3 ? "weak" : a < 0.5 ? "moderate" : "strong";
+      var dir = rs < 0 ? "negative" : "positive";
+      var meaning = rs < 0 ? "Participants who slept less tended to react more slowly." : "Participants who slept more tended to react more slowly.";
+      var sig = p < 0.05;
+      v.className = "verdict " + (sig ? "sig" : "ns");
+      v.textContent = (a < 0.1 ? "There is no notable correlation" : "There is a " + strength + " " + dir + " correlation") +
+        " (rₛ = " + num(rs, 3) + ", n = " + n + "). " + (a >= 0.1 ? meaning + " " : "") +
+        (sig ? "The correlation is significant (p < 0.05), so H₀ is rejected." : "The correlation is not significant (p ≥ 0.05), so H₀ cannot be rejected.") +
+        (n < 10 ? " Note: with n < 10 the p-value is only a rough estimate." : "");
+    }
+    drawChart(x, y);
+    drawTable();
+  }
+
+  function niceTicks(lo, hi, count) {
+    var span = hi - lo, step = Math.pow(10, Math.floor(Math.log10(span / count))), err = span / count / step;
+    if (err >= 7.5) step *= 10; else if (err >= 3.5) step *= 5; else if (err >= 1.5) step *= 2;
+    var t = [], s = Math.floor(lo / step) * step; for (var v = s; v <= hi + 1e-9; v += step) t.push(+v.toFixed(6));
+    return t;
+  }
+  function drawChart(x, y) {
+    var W = 720, H = 400, L = 64, R = 20, Tm = 18, B = 58;
+    var xlo = Math.min(4, Math.floor(Math.min.apply(null, x.concat([5])))), xhi = Math.max(11, Math.ceil(Math.max.apply(null, x.concat([10]))));
+    var ymin = y.length ? Math.min.apply(null, y) : 200, ymax = y.length ? Math.max.apply(null, y) : 400;
+    var yt = niceTicks(Math.max(0, ymin - 30), ymax + 30, 6), ylo = yt[0], yhi = yt[yt.length - 1];
+    if (yhi < ymax) { yhi += yt[1] - yt[0]; yt.push(yhi); }
+    var sx = function (v) { return L + (v - xlo) / (xhi - xlo) * (W - L - R); };
+    var sy = function (v) { return H - B - (v - ylo) / (yhi - ylo) * (H - Tm - B); };
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Scatter plot of sleep duration against reaction time">';
+    yt.forEach(function (t) { s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + sy(t) + '" y2="' + sy(t) + '"/><text class="tick" x="' + (L - 8) + '" y="' + (sy(t) + 4) + '" text-anchor="end">' + t + '</text>'; });
+    for (var h = xlo; h <= xhi; h++) s += '<text class="tick" x="' + sx(h) + '" y="' + (H - B + 20) + '" text-anchor="middle">' + h + '</text>';
+    s += '<line class="ax" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/><line class="ax" x1="' + L + '" x2="' + L + '" y1="' + Tm + '" y2="' + (H - B) + '"/>';
+    s += '<text class="alab" x="' + ((L + W - R) / 2) + '" y="' + (H - 14) + '" text-anchor="middle">Sleep duration last night (h)</text>';
+    s += '<text class="alab" transform="translate(16 ' + ((Tm + H - B) / 2) + ') rotate(-90)" text-anchor="middle">Median reaction time (ms)</text>';
+    if (x.length >= 3) {
+      var mx = mean(x), my = mean(y), sn = 0, den = 0;
+      for (var i = 0; i < x.length; i++) { sn += (x[i] - mx) * (y[i] - my); den += (x[i] - mx) * (x[i] - mx); }
+      if (den) { var b = sn / den, a = my - b * mx, x0 = Math.min.apply(null, x), x1 = Math.max.apply(null, x);
+        s += '<line class="fit" x1="' + sx(x0) + '" y1="' + sy(a + b * x0) + '" x2="' + sx(x1) + '" y2="' + sy(a + b * x1) + '"/>'; }
+    }
+    for (var k = 0; k < x.length; k++) s += '<circle class="pt" cx="' + sx(x[k]).toFixed(1) + '" cy="' + sy(y[k]).toFixed(1) + '" r="5.5"/>';
+    if (!x.length) s += '<text class="alab" x="' + ((L + W - R) / 2) + '" y="' + ((Tm + H - B) / 2) + '" text-anchor="middle">No data yet</text>';
+    $("r-chart").innerHTML = s + "</svg>";
+  }
+
+  var COLS = ["ID", "Date", "Time", "Sleep (h)", "Age", "Caffeine", "Nap", "Awake (h)", "Device", "Hz", "False starts", "Valid", "Median (ms)", "Mean (ms)", "SD (ms)", "Excluded"];
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function drawTable() {
+    $("a-table").tHead.innerHTML = "<tr>" + COLS.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr>";
+    var body = ROWS.slice().sort(function (a, b) { return a.sleep - b.sleep; }).map(function (o) {
+      var why = excluded(o);
+      return '<tr class="' + (why.length ? "out" : "") + '"><td>' + esc(o.id) + "</td><td>" + esc(o.date) + "</td><td>" + esc(o.time) + "</td><td>" + num(o.sleep / 60, 2) +
+        "</td><td>" + o.age + "</td><td>" + (o.caf ? "yes" : "no") + "</td><td>" + (o.nap ? "yes" : "no") + "</td><td>" + num(o.awake / 60, 1) +
+        "</td><td>" + esc(o.dev) + "</td><td>" + (o.hz || "–") + "</td><td>" + o.fs + "</td><td>" + o.valid + "/" + o.rts.length +
+        "</td><td>" + num(o.med, 0) + "</td><td>" + num(o.mean, 1) + "</td><td>" + num(o.sd, 1) + "</td><td>" + (why.join(", ") || "–") + "</td></tr>";
+    }).join("");
+    $("a-table").tBodies[0].innerHTML = body || '<tr><td colspan="' + COLS.length + '" style="text-align:left">No data pasted yet.</td></tr>';
+  }
+  function buildCSV() {
+    var head = ["participant_id", "date", "local_time", "sleep_hours", "age", "caffeine_3h", "nap_today", "hours_awake", "input_device", "refresh_hz", "false_starts"];
+    for (var i = 1; i <= 10; i++) head.push("rt" + i + "_ms");
+    head = head.concat(["valid_trials", "median_rt_ms", "mean_rt_ms", "sd_rt_ms", "excluded", "reason"]);
+    var lines = [head.join(",")];
+    ROWS.forEach(function (o) {
+      var why = excluded(o), r = [o.id, o.date, o.time, num(o.sleep / 60, 2), o.age, o.caf ? "yes" : "no", o.nap ? "yes" : "no", num(o.awake / 60, 2), o.dev, o.hz, o.fs];
+      for (var i = 0; i < 10; i++) r.push(o.rts[i] != null ? o.rts[i] : "");
+      r = r.concat([o.valid, num(o.med, 1), num(o.mean, 1), num(o.sd, 1), why.length ? "yes" : "no", '"' + why.join("; ") + '"']);
+      lines.push(r.join(","));
+    });
+    return lines.join("\r\n");
+  }
+
+  $("b-analyse").addEventListener("click", function () {
+    var res = parseAll($("a-input").value), err = $("a-err");
+    ROWS = res.rows; $("a-demobadge").hidden = true;
+    err.hidden = !(res.bad || !res.rows.length);
+    err.textContent = !res.rows.length ? "No data found. Make sure you copied the header row (with participant_id) or result codes starting with RT1|." : res.bad + " row(s) were incomplete and were skipped.";
+    runAnalysis();
+  });
+  $("b-clear").addEventListener("click", function () { $("a-input").value = ""; ROWS = []; $("a-err").hidden = true; $("a-demobadge").hidden = true; runAnalysis(); });
+  ["x-caf", "x-nap", "x-age", "x-valid"].forEach(function (id) { $(id).addEventListener("change", runAnalysis); });
+
+  // Made-up example data (deterministic), only to preview the analysis
+  $("b-demo").addEventListener("click", function () {
+    var seed = 7; var rnd = function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    var g = function () { return Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd()); };
+    var lines = [], C = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    for (var i = 0; i < 36; i++) {
+      var id = ""; for (var j = 0; j < 6; j++) id += C[Math.floor(rnd() * C.length)];
+      var sleep = Math.round((4.5 + rnd() * 5.5) * 60 / 5) * 5, base = 330 - 11 * (sleep / 60) + g() * 22;
+      var rts = []; for (var k = 0; k < 10; k++) rts.push(Math.max(140, Math.round(base + g() * 35)));
+      if (rnd() < 0.08) rts[3] = 1240;
+      var dev = rnd() < 0.6 ? "m" : "t", hz = dev === "t" ? 60 : [60, 144, 165, 240][Math.floor(rnd() * 4)];
+      lines.push(["RT1", id, "2026-11-0" + (1 + Math.floor(rnd() * 7)), pad(12 + Math.floor(rnd() * 10)) + ":" + pad(Math.floor(rnd() * 60)), sleep,
+        16 + Math.floor(rnd() * 10), rnd() < 0.12 ? 1 : 0, rnd() < 0.08 ? 1 : 0, Math.round(180 + rnd() * 600), dev, hz, Math.floor(rnd() * 3), rts.join(",")].join("|"));
+    }
+    $("a-input").value = lines.join("\n");
+    ROWS = parseAll($("a-input").value).rows; $("a-err").hidden = true; $("a-demobadge").hidden = false; runAnalysis();
+  });
+
+  $("b-csvcopy").addEventListener("click", function () {
+    if (!ROWS.length) { $("a-csvmsg").textContent = "No data yet."; return; }
+    copyText(buildCSV(), $("a-csvmsg"), "CSV copied.", null);
+  });
+  $("b-csvsave").addEventListener("click", function () {
+    if (!ROWS.length) { $("a-csvmsg").textContent = "No data yet."; return; }
+    var blob = new Blob(["﻿" + buildCSV()], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sleep-reaction-data.csv";
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  });
+
+  /* ---------- Views ---------- */
+  function route() {
+    var a = location.hash === "#analysis";
+    $("main").hidden = a; $("analysis").hidden = !a;
+    if (a) runAnalysis();
+  }
+  $("b-toparticipant").addEventListener("click", function () { location.hash = ""; route(); });
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+</body>
+</html>
